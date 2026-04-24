@@ -3,7 +3,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { UploadCloud, CheckCircle2, Leaf, Loader2, ArrowLeft, RefreshCcw } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!ai) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("API key is missing. Please set GEMINI_API_KEY.");
+    ai = new GoogleGenAI({ apiKey: key });
+  }
+  return ai;
+};
 
 const extractAmountFromBill = async (file: File): Promise<number | null> => {
   try {
@@ -17,7 +25,8 @@ const extractAmountFromBill = async (file: File): Promise<number | null> => {
       reader.readAsDataURL(file);
     });
 
-    const response = await ai.models.generateContent({
+    const aiInstance = getAI();
+    const response = await aiInstance.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: [
         { inlineData: { data: base64, mimeType: file.type } },
